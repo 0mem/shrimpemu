@@ -59,7 +59,8 @@ void execute_imm(cpu_t *cpu, instruction_t instruction) {
 
     switch (instruction.opcode) {
     case ADD:
-        register_write(&cpu->registers, instruction.destination, immediate);
+        register_write(&cpu->registers, instruction.destination
+            , register_read(&cpu->registers, instruction.destination) + immediate);
         break;
     
     default:
