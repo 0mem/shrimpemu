@@ -1,4 +1,4 @@
-#include "cpu.h"
+#include <cpu.h>
 
 uint16_t register_read(registers_t *registers, size_t index) {
     return registers->registers[index];
@@ -29,29 +29,40 @@ uint16_t cpu_fetch(cpu_t *cpu) {
 }
 
 void execute(cpu_t *cpu) {
-    uint16_t instruction = cpu_fetch(cpu);
-    uint16_t opcode = (instruction & 0xf800) >> 11;
-    uint16_t flags = (instruction & 0x70) >> 4;
+    uint16_t instruction_raw = cpu_fetch(cpu);
+    instruction_t instruction;
+    instruction_new(&instruction, instruction_raw);
+
+    printf("0x%04x\n", instruction_raw);
+    printf("Opcode: %d | Dest: %d | Flags: %d | Src: %d\n", instruction.opcode, instruction.destination, instruction.flags, instruction.source);
     
-    switch (opcode) {
+    switch (instruction.opcode) {
     case ADD:
-        if (flags & 0x4) {
-            cpu->program_counter += 1;
+        if (instruction.flags & 0x4) {
             execute_imm(cpu, instruction);
-            cpu->program_counter += 1;
+        } else {
+            execute_general(cpu, instruction);
         }
+        cpu->program_counter += 1;
     
     default:
         break;
     }
 }
 
-void execute_general(cpu_t *cpu, uint16_t instruction)
-{
+void execute_general(cpu_t *cpu, instruction_t instruction) {
 }
 
-void execute_imm(cpu_t *cpu, uint16_t instruction) {
+void execute_imm(cpu_t *cpu, instruction_t instruction) {
+    cpu->program_counter += 1;
     uint16_t immediate = cpu_fetch(cpu);
 
+    switch (instruction.opcode) {
+    case ADD:
+        register_write(&cpu->registers, instruction.destination, immediate);
+        break;
     
+    default:
+        break;
+    }
 }

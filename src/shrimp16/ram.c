@@ -19,7 +19,7 @@ void ram_initialize(ram_t *ram, uint16_t *binary, size_t binary_size) {
 
 uint16_t ram_read(ram_t *ram, uint16_t address) {
     size_t index = address - RAM_BASE;
-    return ram->memory[index];
+    return (ram->memory[index] >> 8) | (ram->memory[index] << 8);
 }
 
 void ram_write(ram_t *ram, uint16_t address, uint16_t value) {

@@ -23,6 +23,8 @@ int main(int argc, char **argv) {
     bus_initialize_ram(cpu->bus, binary, binary_size);
     cpu->program_counter = 0x50;
     
+    execute(cpu);
+    printf("%d\n", register_read(&cpu->registers, 1));
 
     cpu_free(cpu);
 
