@@ -3,16 +3,18 @@
 
 #include <ram.h>
 
-typedef struct {
-    ram_t *ram;
-} bus_t;
+#include <stdio.h>
 
-bus_t * bus_new(void);
-void bus_free(bus_t *bus);
+struct bus_t {
+	ram_t ram;
+};
 
-void bus_initialize_ram(bus_t *bus, uint16_t *binary, size_t binary_size);
+struct bus_t *bus_alloc(void);
+void bus_free(struct bus_t *bus);
 
-uint16_t bus_read(bus_t *bus, uint16_t address);
-void bus_write(bus_t *bus, uint16_t address, uint16_t value);
+int bus_init_ram(struct bus_t *bus, FILE *bin);
+
+int bus_read(struct bus_t *bus, uint16_t addr, uint16_t *out);
+int bus_write(struct bus_t *bus, uint16_t addr, uint16_t val);
 
 #endif

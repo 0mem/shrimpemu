@@ -1,36 +1,42 @@
 #ifndef CPU_H
 #define CPU_H
 
-#include <stdint.h>
-#include <stdlib.h>
 #include <bus.h>
-#include <instruction.h>
 
-#define WORD            16
+#include <stdint.h>
 
-#define NUM_REGISTERS   16
-
-typedef struct {
-    uint16_t registers[NUM_REGISTERS];
-} registers_t;
-
-uint16_t register_read(registers_t *registers, size_t index);
-void register_write(registers_t *registers, size_t index, uint16_t value);
+#define NUM_REGS 16
 
 typedef struct {
-    registers_t registers;
-    uint16_t program_counter;
-    uint16_t flags_register;
-    bus_t *bus;
-} cpu_t;
+	uint16_t *regs;
+} gpr_t;
 
-cpu_t * cpu_new(void);
-void cpu_free(cpu_t *cpu);
+#define gpr(x) ((gpr_t){ (x) })
 
-uint16_t cpu_fetch(cpu_t *cpu);
+#define gpr_val(x, y) ((x).regs[y])
 
-void execute(cpu_t *cpu);
-void execute_general(cpu_t *cpu, instruction_t instruction);
-void execute_imm(cpu_t *cpu, instruction_t instruction);
+struct cpu_t {
+	gpr_t regs;
+	uint16_t flag_reg;
+	uint16_t pc;
+	struct bus_t *bus;
+};
+
+#define INST_OPCODE 0xf800
+#define INST_RD 0x780
+#define INST_FLAGS 0x70
+#define INST_RS 0xf
+
+struct instruction_t {
+	uint16_t opcode;
+	uint16_t rd;
+	uint16_t flags;
+	uint16_t rs;
+};
+
+struct cpu_t *cpu_alloc(void);
+void cpu_free(struct cpu_t *cpu);
+
+int cpu_execute(struct cpu_t *cpu);
 
 #endif
