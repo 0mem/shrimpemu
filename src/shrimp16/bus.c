@@ -22,7 +22,7 @@ struct bus_t *bus_alloc(void)
 
 void bus_free(struct bus_t *bus)
 {
-	free(bus->ram.ram);
+	free(ram_ptr(bus->ram));
 	free(bus);
 }
 

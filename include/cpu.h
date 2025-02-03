@@ -12,8 +12,8 @@ typedef struct {
 } gpr_t;
 
 #define gpr(x) ((gpr_t){ (x) })
-
 #define gpr_val(x, y) ((x).regs[y])
+#define gpr_ptr(x) ((x).regs)
 
 struct cpu_t {
 	gpr_t regs;
@@ -27,12 +27,12 @@ struct cpu_t {
 #define INST_FLAGS 0x70
 #define INST_RS 0xf
 
-struct instruction_t {
+typedef struct {
 	uint16_t opcode;
 	uint16_t rd;
 	uint16_t flags;
 	uint16_t rs;
-};
+} instruction_t;
 
 struct cpu_t *cpu_alloc(void);
 void cpu_free(struct cpu_t *cpu);

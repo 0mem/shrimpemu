@@ -14,5 +14,6 @@ typedef struct {
 
 #define ram(x) ((ram_t){ (x) })
 #define ram_val(x, y) ((x).ram[y])
+#define ram_ptr(x) ((x).ram)
 
 #endif

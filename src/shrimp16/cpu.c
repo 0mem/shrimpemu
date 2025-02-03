@@ -3,6 +3,19 @@
 #include <memory.h>
 #include <errno.h>
 
+#define OPCODE_ADD 0
+#define OPCODE_SUB 1
+#define OPCODE_SHA 4
+#define OPCODE_AND 6
+#define OPCODE_OR 7
+#define OPCODE_XOR 8
+#define OPCODE_NOT 9
+#define OPCODE_SHL 10
+#define OPCODE_SHR 11
+#define OPCODE_MOV 15
+
+#define IMM_FLAG 0x4
+
 struct cpu_t *cpu_alloc(void)
 {
 	struct cpu_t *cpu = (struct cpu_t *)malloc(sizeof(struct cpu_t));
@@ -30,7 +43,7 @@ struct cpu_t *cpu_alloc(void)
 
 void cpu_free(struct cpu_t *cpu)
 {
-	free(cpu->regs.regs);
+	free(gpr_ptr(cpu->regs));
 	bus_free(cpu->bus);
 	free(cpu);
 }
@@ -38,6 +51,105 @@ void cpu_free(struct cpu_t *cpu)
 static int cpu_fetch(struct cpu_t *cpu, uint16_t *out)
 {
 	return bus_read(cpu->bus, cpu->pc, out);
+}
+
+static void execute_general(struct cpu_t *cpu, instruction_t inst)
+{
+	switch (inst.opcode) {
+	case OPCODE_ADD:
+		gpr_val(cpu->regs, inst.rd) += gpr_val(cpu->regs, inst.rs);
+		break;
+	case OPCODE_SUB:
+		gpr_val(cpu->regs, inst.rd) -= gpr_val(cpu->regs, inst.rs);
+		break;
+	case OPCODE_SHA:
+		gpr_val(cpu->regs, inst.rd) >>= gpr_val(cpu->regs, inst.rs);
+		break;
+	case OPCODE_AND:
+		gpr_val(cpu->regs, inst.rd) &= gpr_val(cpu->regs, inst.rs);
+		break;
+	case OPCODE_OR:
+		gpr_val(cpu->regs, inst.rd) |= gpr_val(cpu->regs, inst.rs);
+		break;
+	case OPCODE_XOR:
+		gpr_val(cpu->regs, inst.rd) ^= gpr_val(cpu->regs, inst.rs);
+		break;
+	case OPCODE_NOT:
+		gpr_val(cpu->regs, inst.rd) = ~gpr_val(cpu->regs, inst.rs);
+		break;
+	case OPCODE_MOV:
+		gpr_val(cpu->regs, inst.rd) = gpr_val(cpu->regs, inst.rs);
+		break;
+	}
+
+	cpu->pc += 1;
+}
+
+static void execute_general_imm(struct cpu_t *cpu, instruction_t inst)
+{
+	cpu->pc += 1;
+	uint16_t imm;
+	cpu_fetch(cpu, &imm);
+
+	switch (inst.opcode) {
+	case OPCODE_ADD:
+		gpr_val(cpu->regs, inst.rd) += imm;
+		break;
+	case OPCODE_SUB:
+		gpr_val(cpu->regs, inst.rd) -= imm;
+		break;
+	case OPCODE_SHA:
+		gpr_val(cpu->regs, inst.rd) >>= (int16_t)imm;
+		break;
+	case OPCODE_AND:
+		gpr_val(cpu->regs, inst.rd) &= imm;
+		break;
+	case OPCODE_OR:
+		gpr_val(cpu->regs, inst.rd) |= imm;
+		break;
+	case OPCODE_XOR:
+		gpr_val(cpu->regs, inst.rd) ^= imm;
+		break;
+	case OPCODE_NOT:
+		gpr_val(cpu->regs, inst.rd) = ~imm;
+		break;
+	case OPCODE_MOV:
+		gpr_val(cpu->regs, inst.rd) = imm;
+		break;
+	}
+
+	cpu->pc += 1;
+}
+
+static void execute_shift(struct cpu_t *cpu, instruction_t inst)
+{
+	switch (inst.opcode) {
+	case OPCODE_SHL:
+		gpr_val(cpu->regs, inst.rd) <<= gpr_val(cpu->regs, inst.rs);
+		break;
+	case OPCODE_SHR:
+		gpr_val(cpu->regs, inst.rd) >>= gpr_val(cpu->regs, inst.rs);
+		break;
+	}
+
+	cpu->pc += 1;
+}
+
+static void execute_shift_imm(struct cpu_t *cpu, instruction_t inst)
+{
+	cpu->pc += 1;
+	uint16_t imm;
+	cpu_fetch(cpu, &imm);
+
+	switch (inst.opcode) {
+	case OPCODE_SHL:
+		gpr_val(cpu->regs, inst.rd) <<= imm;
+		break;
+	case OPCODE_SHR:
+		gpr_val(cpu->regs, inst.rd) >>= imm;
+		break;
+	}
+	cpu->pc += 1;
 }
 
 int cpu_execute(struct cpu_t *cpu)
@@ -48,16 +160,38 @@ int cpu_execute(struct cpu_t *cpu)
 	if (result < 0)
 		return result;
 
-	struct instruction_t inst = { .opcode = (inst_raw & INST_OPCODE) >> 11,
-				      .rd = (inst_raw & INST_RD) >> 7,
-				      .flags = (inst_raw & INST_FLAGS) >> 4,
-				      .rs = (inst_raw & INST_RS) };
-}
+	instruction_t inst = { .opcode = (inst_raw & INST_OPCODE) >> 11,
+			       .rd = (inst_raw & INST_RD) >> 7,
+			       .flags = (inst_raw & INST_FLAGS) >> 4,
+			       .rs = (inst_raw & INST_RS) };
 
-static void execute_general(struct cpu_t *cpu, struct instruction_t inst)
-{
-}
+	switch (inst.opcode) {
+	case OPCODE_ADD:
+	case OPCODE_SUB:
+	case OPCODE_SHA:
+	case OPCODE_AND:
+	case OPCODE_OR:
+	case OPCODE_XOR:
+	case OPCODE_NOT:
+	case OPCODE_MOV:
+		if (inst.flags & IMM_FLAG)
+			execute_general_imm(cpu, inst);
+		else
+			execute_general(cpu, inst);
 
-static void execute_imm(struct cpu_t *cpu, struct instruction_t inst)
-{
+		break;
+	case OPCODE_SHL:
+	case OPCODE_SHR:
+		if (inst.flags & IMM_FLAG)
+			execute_shift_imm(cpu, inst);
+		else
+			execute_shift(cpu, inst);
+
+		break;
+	default:
+		return -EINVAL;
+		break;
+	}
+
+	return 0;
 }
