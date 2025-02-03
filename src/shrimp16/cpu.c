@@ -17,9 +17,9 @@ struct cpu_t *cpu_alloc(void)
 
 	cpu->regs = gpr(regs);
 
-	cpu->flag_reg = 0;
+	cpu->flag_reg = freg(0);
 
-	cpu->pc = 0x50;
+	cpu->pc = pc(RAM_BASE);
 
 	cpu->bus = bus_alloc();
 	if (!cpu->bus)
@@ -37,7 +37,7 @@ void cpu_free(struct cpu_t *cpu)
 
 static int cpu_fetch(struct cpu_t *cpu, uint16_t *out)
 {
-	return bus_read(cpu->bus, cpu->pc, out);
+	return bus_read(cpu->bus, pc_val(cpu->pc), out);
 }
 
 static void execute_general(struct cpu_t *cpu, instruction_t inst)
@@ -69,12 +69,12 @@ static void execute_general(struct cpu_t *cpu, instruction_t inst)
 		break;
 	}
 
-	cpu->pc += 1;
+	pc_move(cpu->pc, 1);
 }
 
 static void execute_general_imm(struct cpu_t *cpu, instruction_t inst)
 {
-	cpu->pc += 1;
+	pc_move(cpu->pc, 1);
 	uint16_t imm;
 	cpu_fetch(cpu, &imm);
 
@@ -105,7 +105,7 @@ static void execute_general_imm(struct cpu_t *cpu, instruction_t inst)
 		break;
 	}
 
-	cpu->pc += 1;
+	pc_move(cpu->pc, 1);
 }
 
 static void execute_shift(struct cpu_t *cpu, instruction_t inst)
@@ -119,12 +119,12 @@ static void execute_shift(struct cpu_t *cpu, instruction_t inst)
 		break;
 	}
 
-	cpu->pc += 1;
+	pc_move(cpu->pc, 1);
 }
 
 static void execute_shift_imm(struct cpu_t *cpu, instruction_t inst)
 {
-	cpu->pc += 1;
+	pc_move(cpu->pc, 1);
 	uint16_t imm;
 	cpu_fetch(cpu, &imm);
 
@@ -136,7 +136,7 @@ static void execute_shift_imm(struct cpu_t *cpu, instruction_t inst)
 		gpr_val(cpu->regs, inst.rd) >>= imm;
 		break;
 	}
-	cpu->pc += 1;
+	pc_move(cpu->pc, 1);
 }
 
 int cpu_execute(struct cpu_t *cpu)
