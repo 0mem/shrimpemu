@@ -3,19 +3,6 @@
 #include <memory.h>
 #include <errno.h>
 
-#define OPCODE_ADD 0
-#define OPCODE_SUB 1
-#define OPCODE_SHA 4
-#define OPCODE_AND 6
-#define OPCODE_OR 7
-#define OPCODE_XOR 8
-#define OPCODE_NOT 9
-#define OPCODE_SHL 10
-#define OPCODE_SHR 11
-#define OPCODE_MOV 15
-
-#define IMM_FLAG 0x4
-
 struct cpu_t *cpu_alloc(void)
 {
 	struct cpu_t *cpu = (struct cpu_t *)malloc(sizeof(struct cpu_t));
